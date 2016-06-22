@@ -10,10 +10,11 @@ from google.appengine.ext import ndb
 
 wordList = 'ant baboon badger bat bear beaver'.split()
 
+
 class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
-    email =ndb.StringProperty()
+    email = ndb.StringProperty()
 
 
 class Game(ndb.Model):
@@ -60,6 +61,7 @@ class Game(ndb.Model):
         score = Score(user=self.user, date=date.today(), won=won,
                       guesses=self.attempts_allowed - self.attempts_remaining)
         score.put()
+
 
 
 class Score(ndb.Model):

@@ -3,11 +3,11 @@ import logging
 from google.appengine.ext import ndb
 import endpoints
 
+
 def get_by_urlsafe(urlsafe, model):
     """Returns an ndb.Model entity that the urlsafe key points to. Checks
         that the type of entity returned is of the correct kind. Raises an
-        error if the key String is malformed or the entity is of the incorrect
-        kind
+        error if the key String is malformed or the entity kind is incorrect
     Args:
         urlsafe: A urlsafe key string
         model: The expected entity kind
@@ -32,8 +32,3 @@ def get_by_urlsafe(urlsafe, model):
     if not isinstance(entity, model):
         raise ValueError('Incorrect Kind')
     return entity
-
-
-
-
-#ahBkZXZ-aGFuZ21hbi0xMzQ2chELEgRHYW1lGICAgICA0McKDA

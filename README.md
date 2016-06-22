@@ -11,12 +11,13 @@
  
  
 ##Game Description:
-Guess a number is a simple guessing game. Each game begins with a random 'target'
-number between the minimum and maximum values provided, and a maximum number of
+Hangman is a simple guessing game. Each game begins with a random 'secret word'
+(randomly chosen between a given list of words) and a maximum number of
 'attempts'. 'Guesses' are sent to the `make_move` endpoint which will reply
-with either: 'too low', 'too high', 'you win', or 'game over' (if the maximum
-number of attempts is reached).
-Many different Guess a Number games can be played by many different Users at any
+with a list of the missed letters and the correct letters guessed between some *
+that indicates the hidden letters: it will reply with 'you win', or 'game over'
+(if the maximum number of attempts is reached before guessing the whole word).
+Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
 `urlsafe_game_key`.
 
@@ -40,12 +41,12 @@ given time. Each game can be retrieved or played by using the path parameter
  - **new_game**
     - Path: 'game'
     - Method: POST
-    - Parameters: user_name, min, max, attempts
+    - Parameters: user_name, attempts
     - Returns: GameForm with initial game state.
     - Description: Creates a new Game. user_name provided must correspond to an
-    existing user - will raise a NotFoundException if not. Min must be less than
-    max. Also adds a task to a task queue to update the average moves remaining
-    for active games.
+    existing user - will raise a NotFoundException if not. Attempts must be less
+    then 11. Also adds a task to a task queue to update the average moves 
+    remaining for active games.
      
  - **get_game**
     - Path: 'game/{urlsafe_game_key}'
@@ -77,8 +78,8 @@ given time. Each game can be retrieved or played by using the path parameter
     - Description: Returns all Scores recorded by the provided player (unordered).
     Will raise a NotFoundException if the User does not exist.
     
- - **get_active_game_count**
-    - Path: 'games/active'
+ - **get_average_attempts_remaining**
+    - Path: 'games/average_attempts'
     - Method: GET
     - Parameters: None
     - Returns: StringMessage
@@ -100,7 +101,7 @@ given time. Each game can be retrieved or played by using the path parameter
     - Representation of a Game's state (urlsafe_key, attempts_remaining,
     game_over flag, message, user_name).
  - **NewGameForm**
-    - Used to create a new game (user_name, min, max, attempts)
+    - Used to create a new game (user_name, attempts)
  - **MakeMoveForm**
     - Inbound make move form (guess).
  - **ScoreForm**

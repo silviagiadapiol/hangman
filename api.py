@@ -30,6 +30,7 @@ MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
 
 wordList = 'ant baboon badger bat bear beaver'.split()
 
+
 @endpoints.api(name='hangman', version='v1')
 class Hangman(remote.Service):
     """Game API"""
@@ -47,7 +48,6 @@ class Hangman(remote.Service):
         user.put()
         return StringMessage(message='User {} created!'.format(
                 request.user_name))
-
 
     @endpoints.method(request_message=NEW_GAME_REQUEST,
                       response_message=GameForm,
@@ -71,7 +71,6 @@ class Hangman(remote.Service):
         taskqueue.add(url='/tasks/cache_average_attempts')
         return game.to_form('Good luck playing Hangman!')
 
-
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
                       path='game/{urlsafe_game_key}',
@@ -84,7 +83,6 @@ class Hangman(remote.Service):
             return game.to_form('Time to make a move!')
         else:
             raise endpoints.NotFoundException('Game not found!')
-
 
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
                       response_message=GameForm,
@@ -123,46 +121,35 @@ class Hangman(remote.Service):
                     break
             if foundAllLetters:
                 game.end_game(True)
-                #return game.to_form('You win!')
-                return game.to_form('Yes! The secret word is: ' + game.secretWord +'! You win!')
+                return game.to_form(
+                    ' You win! The secret word is: ' + game.secretWord + '!')
         else:
             game.missedLetters = game.missedLetters + request.guess
 
-        # Print the missed letters and the correct letter in the right place between blanks
+        # Print the missed letters and replace blanks with guessed letters
         game.attempts_remaining = game.attempts_allowed-len(game.missedLetters)
         blanks = '*' * len(game.secretWord)
-        for i in range(len(game.secretWord)): # replace blanks with correctly guessed letters
+        for i in range(len(game.secretWord)):
             if game.secretWord[i] in game.correctLetters:
                 blanks = blanks[:i] + game.secretWord[i] + blanks[i+1:]
-        msg = 'Guessed letters: '+ blanks + ' - Missed Letters: ' + game.missedLetters + ' - You have ' + str(game.attempts_remaining) + ' attempts left.'
- 
+        m1 = 'Guessed letters: ' + blanks
+        m2 = ' - Missed Letters: ' + game.missedLetters
+        m3 = ' - You have ' + str(game.attempts_remaining) + ' attempts left.'
+        msg = m1 + m2 + m3
 
         # Check if player has guessed too many times and lost
         if len(game.missedLetters) == game.attempts_allowed:
-            #msg = 'You are an Hangman! You have run out of guesses after '+ str(len(game.missedLetters)) + ' missed guesses and' + str(len(game.correctLetters)) + ' correct guesses, the secret word was "' + game.secretWord + '"'
-            msg = 'You lose!'
+            m1 = 'You are an Hangman! You have run out of guesses after '
+            m2 = str(len(game.missedLetters)) + ' missed guesses and '
+            m3 = str(len(game.correctLetters))
+            m4 = ' correct guesses, the secret word was: '
+            m5 = game.secretWord + '! '
+            msg = m1 + m2 + m3 + m4 + m5
             game.end_game(False)
-            return game.to_form(msg + ' Game over!') 
+            return game.to_form(msg + ' Game over!')
         else:
             game.put()
             return game.to_form(msg)
-        
-        # game.attempts_remaining -= 1
-        # if request.guess == game.target:
-        #     game.end_game(True)
-        #     return game.to_form('You win!')
-
-        # if request.guess < game.target:
-        #     msg = 'Too low!'
-        # else:
-        #     msg = 'Too high!'
-
-        # if game.attempts_remaining < 1:
-        #     game.end_game(False)
-        #     return game.to_form(msg + ' Game over!')
-        # else:
-        #     game.put()
-        #     return game.to_form(msg)
 
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
@@ -186,9 +173,6 @@ class Hangman(remote.Service):
         scores = Score.query(Score.user == user.key)
         return ScoreForms(items=[score.to_form() for score in scores])
 
-
-
-
     @endpoints.method(response_message=StringMessage,
                       path='games/average_attempts',
                       name='get_average_attempts_remaining',
@@ -204,7 +188,7 @@ class Hangman(remote.Service):
         if games:
             count = len(games)
             total_attempts_remaining = sum([game.attempts_remaining
-                                        for game in games])
+                                            for game in games])
             average = float(total_attempts_remaining)/count
             memcache.set(MEMCACHE_MOVES_REMAINING,
                          'The average moves remaining is {:.2f}'.format(average))
