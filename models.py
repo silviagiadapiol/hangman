@@ -2,6 +2,7 @@
 entities used by the Game. Because these classes are also regular Python
 classes they can include methods (such as 'to_form' and 'new_game')."""
 
+from __future__ import print_function
 import random
 from datetime import date
 from protorpc import messages
@@ -17,26 +18,28 @@ class User(ndb.Model):
 
 class Game(ndb.Model):
     """Game object"""
-    targetWord = ndb.StringProperty
-    attempts_allowed = ndb.IntegerProperty
-    attempts_remaining = ndb.IntegerProperty((required=True, default=5)
+    secretWord = ndb.StringProperty()
+    missedLetters = ndb.StringProperty()
+    correctLetters = ndb.StringProperty()
+    attempts_allowed = ndb.IntegerProperty(required=True)
+    attempts_remaining = ndb.IntegerProperty(required=True, default=5)
     game_over = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
 
     @classmethod
-    def new_game(cls, user, wordList, attempts):
+    def new_game(cls, user, attempts):
         """Creates and returns a new game"""
-        if attempts >=10:
-            raise ValueError('Attempts must be less or equal to 10')
-        game = Game(user=user
-                    secretWord= wordList[random.randint(0, len(wordList)-1)]
-                    attempts_allowed = attempts,
-                    attempts_remaining = attempts,                    
+        if attempts > 10:
+            raise ValueError('The number of attempst must be 10 or less')
+        game = Game(user=user,
+                    secretWord=wordList[random.randint(0, len(wordList)-1)],
+                    missedLetters = '',
+                    correctLetters = '',
+                    attempts_allowed=attempts,
+                    attempts_remaining=attempts,
                     game_over=False)
         game.put()
         return game
-
-
 
     def to_form(self, message):
         """Returns a GameForm representation of the Game"""
@@ -54,9 +57,7 @@ class Game(ndb.Model):
         self.game_over = True
         self.put()
         # Add the game to the score 'board'
-        score = Score(user=self.user,
-                      date=date.today(),
-                      won=won,
+        score = Score(user=self.user, date=date.today(), won=won,
                       guesses=self.attempts_allowed - self.attempts_remaining)
         score.put()
 
@@ -69,10 +70,8 @@ class Score(ndb.Model):
     guesses = ndb.IntegerProperty(required=True)
 
     def to_form(self):
-        return ScoreForm(user_name=self.user.get().name,
-                         won=self.won,
-                         date=str(self.date),
-                         guesses=self.guesses)
+        return ScoreForm(user_name=self.user.get().name, won=self.won,
+                         date=str(self.date), guesses=self.guesses)
 
 
 class GameForm(messages.Message):
@@ -87,27 +86,12 @@ class GameForm(messages.Message):
 class NewGameForm(messages.Message):
     """Used to create a new game"""
     user_name = messages.StringField(1, required=True)
-    min = messages.IntegerField(2, default=1)
-    max = messages.IntegerField(3, default=10)
-    attempts = messages.IntegerField(4, default=5)
-
-                    wordIndex = random.randint(0, len(wordList)-1)
-                    secretWord=wordList[wordIndex],
-                    attempts_remaining=attempts_allowed
-                    missedLetters = ''
-                    correctLetters = ''
-
-class NewGameForm(messages.Message):
-    """Used to create a new game"""
-    user_name = messages.StringField(1, required=True)
-    wordList = messages.ListField(2)
-    attempts = messages.IntegerField(3, default=5)
+    attempts = messages.IntegerField(2, default=5)
 
 
-
-class InsertLetterForm(messages.Message):
+class MakeMoveForm(messages.Message):
     """Used to make a move in an existing game"""
-    guess = messages.CharField(1, required=True)
+    guess = messages.StringField(1, required=True)
 
 
 class ScoreForm(messages.Message):
@@ -126,6 +110,3 @@ class ScoreForms(messages.Message):
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     message = messages.StringField(1, required=True)
-
-
-

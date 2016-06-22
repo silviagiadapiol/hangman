@@ -1,5 +1,4 @@
 """utils.py - File for collecting general utility functions."""
-
 import logging
 from google.appengine.ext import ndb
 import endpoints
@@ -33,3 +32,8 @@ def get_by_urlsafe(urlsafe, model):
     if not isinstance(entity, model):
         raise ValueError('Incorrect Kind')
     return entity
+
+
+
+
+#ahBkZXZ-aGFuZ21hbi0xMzQ2chELEgRHYW1lGICAgICA0McKDA
