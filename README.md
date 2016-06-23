@@ -1,22 +1,22 @@
-#Full Stack Nanodegree Project 4 Refresh
+#Full Stack Nanodegree Project 4 - HANGMAN API
 
 ## Set-Up Instructions:
 1.  Update the value of application in app.yaml to the app ID you have registered
  in the App Engine admin console and would like to use to host your instance of this sample.
 1.  Run the app with the devserver using dev_appserver.py DIR, and ensure it's
  running by visiting the API Explorer - by default localhost:8080/_ah/api/explorer.
-1.  (Optional) Generate your client library(ies) with the endpoints tool.
- Deploy your application.
- 
  
  
 ##Game Description:
 Hangman is a simple guessing game. Each game begins with a random 'secret word'
 (randomly chosen between a given list of words) and a maximum number of
 'attempts'. 'Guesses' are sent to the `make_move` endpoint which will reply
-with a list of the missed letters and the correct letters guessed between some *
-that indicates the hidden letters: it will reply with 'you win', or 'game over'
-(if the maximum number of attempts is reached before guessing the whole word).
+with a list of the missed letters and the correct letters guessed between 
+some * that indicates the hidden letters; it will reply with 'you win', or 
+'game over' (if the maximum number of attempts is reached before guessing 
+the whole word). For each User the Score is determined by the number of 
+attempts made before guessing the word (or losing). The lower the Score
+the best is the result.
 Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
 `urlsafe_game_key`.
@@ -86,6 +86,46 @@ given time. Each game can be retrieved or played by using the path parameter
     - Description: Gets the average number of attempts remaining for all games
     from a previously cached memcache key.
 
+- **get_user_games**
+    - Path: 'games/user/{user_name}'
+    - Method: GET
+    - Parameters: user_name
+    - Returns: GameForms
+    - Description: Returns all Games played by the selected player, listing
+    all the active games first (game_over=false) and then the completed ones 
+    (game_over=true) .
+    Will raise a NotFoundException if the User does not exist.
+    
+ - **cancel_game**
+    - Path: ''game_canc/{urlsafe_game_key}''
+    - Method: PUT
+    - Parameters: urlsafe_game_key
+    - Returns: Message confirming game deletion
+    - Description: Allows users to cancel a game in progress but not 
+      a completed game (a Boolean field identify cancelled games).
+    
+ - **get_high_scores**
+    - Remember how you defined a score in Task 2?
+            Now we will use that to generate a list of high scores in descending order, a leader-board!
+            - Accept an optional parameter `number_of_results` that limits the number of results returned.
+    
+ - **get_user_rankings**
+    - Come up with a method for ranking the performance of each player.
+            (winning percentage with ties broken by the average number of guesses.)
+            - Create an endpoint that returns this player ranking. 
+            The results should include each Player's name and the 'performance' indicator (eg. win/loss ratio).
+ 
+ - **get_game_history**
+        - Your API Users may want to be able to see a 'history' of moves for each game.
+        - Add the capability for a Game's history to be presented in a similar way.
+         For example: If a User made played 'Guess a Number' with the moves:
+        (5, 8, 7), and received messages such as: ('Too low!', 'Too high!',
+        'You win!'), an endpoint exposing the game_history might produce something like:
+        [('Guess': 5, result: 'Too low'), ('Guess': 8, result: 'Too high'),
+        ('Guess': 7, result: 'Win. Game over')].
+        - Adding this functionality will require some additional properties in the 'Game' model
+        along with a Form, and endpoint to present the data to the User.
+
 ##Models Included:
  - **User**
     - Stores unique user_name and (optional) email address.
@@ -100,14 +140,22 @@ given time. Each game can be retrieved or played by using the path parameter
  - **GameForm**
     - Representation of a Game's state (urlsafe_key, attempts_remaining,
     game_over flag, message, user_name).
+
+ - **GameForms**
+    - Multiple GameForm container.
+
  - **NewGameForm**
     - Used to create a new game (user_name, attempts)
+
  - **MakeMoveForm**
     - Inbound make move form (guess).
+
  - **ScoreForm**
     - Representation of a completed game's Score (user_name, date, won flag,
     guesses).
+
  - **ScoreForms**
     - Multiple ScoreForm container.
+
  - **StringMessage**
     - General purpose String container.

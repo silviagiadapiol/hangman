@@ -14,7 +14,7 @@ from google.appengine.api import taskqueue
 
 from models import User, Game, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
-    ScoreForms
+    ScoreForms, GameForms#, GameQueryForm, GameQueryForms
 from utils import get_by_urlsafe
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
@@ -25,6 +25,8 @@ MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1),)
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
+CANCEL_REQUEST = endpoints.ResourceContainer(
+       urlsafe_game_key=messages.StringField(1),)
 
 MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
 
@@ -84,6 +86,20 @@ class Hangman(remote.Service):
         else:
             raise endpoints.NotFoundException('Game not found!')
 
+    @endpoints.method(request_message=USER_REQUEST,
+                      response_message=GameForms,
+                      path='games/user/{user_name}',
+                      name='get_user_games',
+                      http_method='GET')
+    def get_user_game(self, request):
+        """Return games created by user."""
+        user = User.query(User.name == request.user_name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                    'A User with that name does not exist!')
+        games = Game.query().filter(Game.user == user.key).order(Game.game_over)
+        return GameForms(items=[game.to_form('game retrieved') for game in games])
+
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
                       response_message=GameForm,
                       path='game/{urlsafe_game_key}',
@@ -94,9 +110,10 @@ class Hangman(remote.Service):
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game.game_over:
             return game.to_form('Game already over!')
-
+        if game.game_cancelled:
+            return game.to_form('Game cancelled! You cannot play it!')
+        # Check if the player enters a single letter not already guessed
         game.alreadyGuessed = game.missedLetters + game.correctLetters
-
         letter = request.guess
         letter = letter.lower()
         if len(letter) != 1:
@@ -111,6 +128,8 @@ class Hangman(remote.Service):
         else:
             request.guess = letter
 
+        # If the letter is in the secret word add it the correct
+        # letters list, otherwise add it to the wrong letter list
         if request.guess in game.secretWord:
             game.correctLetters = game.correctLetters + request.guess
             # Check if the player has won
@@ -150,6 +169,23 @@ class Hangman(remote.Service):
         else:
             game.put()
             return game.to_form(msg)
+
+    @endpoints.method(request_message=CANCEL_REQUEST,
+                      response_message=StringMessage,
+                      path='game_canc/{urlsafe_game_key}',
+                      name='cancel_game',
+                      http_method='PUT')
+    def cancel_game(self, request):
+        """Cancel a given game. Returns a success message"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game.game_over:
+            return StringMessage(
+                message='Game already over! You cannot cancel it!')
+        else:
+            game.game_cancelled = True
+            game.put()
+            return StringMessage(message='Game {} canceled!'.format(
+                request.urlsafe_game_key))
 
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
