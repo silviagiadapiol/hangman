@@ -11,20 +11,22 @@
 Hangman is a simple guessing game. Each game begins with a random 'secret word'
 (randomly chosen between a given list of words) and a maximum number of
 'attempts'. 'Guesses' are sent to the `make_move` endpoint which will reply
-with a list of the missed letters and the correct letters guessed between 
-some * that indicates the hidden letters; it will reply with 'you win', or 
-'game over' (if the maximum number of attempts is reached before guessing 
-the whole word). For each User the Score is determined by the number of 
-attempts made before guessing the word (or losing). The lower the Score
-the best is the result.
+with the letters correctly guessed between some * (that indicates the hidden
+letters) and a list of the missed letters. When all the letters of the secret
+word are guessed it will reply with 'you win'; if the maximum number of attempts
+is reached before guessing the whole word it will reply 'game over'. 
+For each User the Score is determined by the number of attempts (missed letters)
+made before guessing the word. So the lower is the Score, the best is the result.
 Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
-`urlsafe_game_key`.
+`urlsafe_game_key`. It's possible to cancel active games but not completed ones.
+It is possible t see a game history.
 
 ##Files Included:
  - api.py: Contains endpoints and game playing logic.
  - app.yaml: App configuration.
  - cron.yaml: Cronjob configuration.
+ - index.py: Composite index.
  - main.py: Handler for taskqueue handler.
  - models.py: Entity and message definitions including helper methods.
  - utils.py: Helper function for retrieving ndb.Models by urlsafe Key string.
@@ -54,7 +56,17 @@ given time. Each game can be retrieved or played by using the path parameter
     - Parameters: urlsafe_game_key
     - Returns: GameForm with current game state.
     - Description: Returns the current state of a game.
-    
+
+ - **get_user_games**
+    - Path: 'games/user/{user_name}'
+    - Method: GET
+    - Parameters: user_name
+    - Returns: GameForms
+    - Description: Returns all Games played by the selected player, listing
+    all the active games first (game_over=false) and then the completed ones 
+    (game_over=true) .
+    Will raise a NotFoundException if the User does not exist.
+
  - **make_move**
     - Path: 'game/{urlsafe_game_key}'
     - Method: PUT
@@ -62,6 +74,14 @@ given time. Each game can be retrieved or played by using the path parameter
     - Returns: GameForm with new game state.
     - Description: Accepts a 'guess' and returns the updated state of the game.
     If this causes a game to end, a corresponding Score entity will be created.
+    
+ - **cancel_game**
+    - Path: ''game_canc/{urlsafe_game_key}''
+    - Method: PUT
+    - Parameters: urlsafe_game_key
+    - Returns: Message confirming game deletion
+    - Description: Allows users to cancel a game in progress but not 
+      a completed game (a Boolean field identify cancelled games).
     
  - **get_scores**
     - Path: 'scores'
@@ -78,6 +98,27 @@ given time. Each game can be retrieved or played by using the path parameter
     - Description: Returns all Scores recorded by the provided player (unordered).
     Will raise a NotFoundException if the User does not exist.
     
+ - **get_high_scores**
+    - Path: 'high_scores/user/{user_name}'
+    - Method: GET
+    - Parameters: get_high_scores
+    - Returns: ScoreForms. 
+    - Description: Returns all players total Scores ordered with the best (lowest) first.
+    
+ - **get_user_rankings**
+    - Path: 'user_ranking/user/{user_name}'
+    - Method: GET
+    - Parameters: get_user_rankings
+    - Returns: ScoreForms. 
+    - Description: Returns all players total Scores ordered with the best (lowest) first.
+ 
+ - **get_game_history**
+    - Path: 'user_ranking/user/{user_name}'
+    - Method: GET
+    - Parameters: get_game_history
+    - Returns: ScoreForms. 
+    - Description: Returns all players total Scores ordered with the best (lowest) first.
+
  - **get_average_attempts_remaining**
     - Path: 'games/average_attempts'
     - Method: GET
@@ -86,45 +127,6 @@ given time. Each game can be retrieved or played by using the path parameter
     - Description: Gets the average number of attempts remaining for all games
     from a previously cached memcache key.
 
-- **get_user_games**
-    - Path: 'games/user/{user_name}'
-    - Method: GET
-    - Parameters: user_name
-    - Returns: GameForms
-    - Description: Returns all Games played by the selected player, listing
-    all the active games first (game_over=false) and then the completed ones 
-    (game_over=true) .
-    Will raise a NotFoundException if the User does not exist.
-    
- - **cancel_game**
-    - Path: ''game_canc/{urlsafe_game_key}''
-    - Method: PUT
-    - Parameters: urlsafe_game_key
-    - Returns: Message confirming game deletion
-    - Description: Allows users to cancel a game in progress but not 
-      a completed game (a Boolean field identify cancelled games).
-    
- - **get_high_scores**
-    - Remember how you defined a score in Task 2?
-            Now we will use that to generate a list of high scores in descending order, a leader-board!
-            - Accept an optional parameter `number_of_results` that limits the number of results returned.
-    
- - **get_user_rankings**
-    - Come up with a method for ranking the performance of each player.
-            (winning percentage with ties broken by the average number of guesses.)
-            - Create an endpoint that returns this player ranking. 
-            The results should include each Player's name and the 'performance' indicator (eg. win/loss ratio).
- 
- - **get_game_history**
-        - Your API Users may want to be able to see a 'history' of moves for each game.
-        - Add the capability for a Game's history to be presented in a similar way.
-         For example: If a User made played 'Guess a Number' with the moves:
-        (5, 8, 7), and received messages such as: ('Too low!', 'Too high!',
-        'You win!'), an endpoint exposing the game_history might produce something like:
-        [('Guess': 5, result: 'Too low'), ('Guess': 8, result: 'Too high'),
-        ('Guess': 7, result: 'Win. Game over')].
-        - Adding this functionality will require some additional properties in the 'Game' model
-        along with a Form, and endpoint to present the data to the User.
 
 ##Models Included:
  - **User**

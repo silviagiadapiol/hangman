@@ -19,14 +19,17 @@ from utils import get_by_urlsafe
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(
-        urlsafe_game_key=messages.StringField(1),)
+        urlsafe_game_key = messages.StringField(1),)
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     MakeMoveForm,
-    urlsafe_game_key=messages.StringField(1),)
-USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
-                                           email=messages.StringField(2))
+    urlsafe_game_key = messages.StringField(1),)
+USER_REQUEST = endpoints.ResourceContainer(
+	user_name = messages.StringField(1),
+	email = messages.StringField(2))
 CANCEL_REQUEST = endpoints.ResourceContainer(
-       urlsafe_game_key=messages.StringField(1),)
+       urlsafe_game_key = messages.StringField(1),)
+HIGH_SC_REQUEST = endpoints.ResourceContainer(
+	max_results_to_show = messages.IntegerField(1),)
 
 MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
 
@@ -91,7 +94,7 @@ class Hangman(remote.Service):
                       path='games/user/{user_name}',
                       name='get_user_games',
                       http_method='GET')
-    def get_user_game(self, request):
+    def get_user_games(self, request):
         """Return games created by user."""
         user = User.query(User.name == request.user_name).get()
         if not user:
@@ -127,7 +130,6 @@ class Hangman(remote.Service):
             return game.to_form(msg)
         else:
             request.guess = letter
-
         # If the letter is in the secret word add it the correct
         # letters list, otherwise add it to the wrong letter list
         if request.guess in game.secretWord:
@@ -140,32 +142,29 @@ class Hangman(remote.Service):
                     break
             if foundAllLetters:
                 game.end_game(True)
-                return game.to_form(
-                    ' You win! The secret word is: ' + game.secretWord + '!')
+                msg = 'Yes, the secret word is: '+ game.secretWord + \
+                '! You win after ' + str(len(game.missedLetters)) + \
+                ' missed guesses'
+            	return game.to_form(msg)
         else:
             game.missedLetters = game.missedLetters + request.guess
-
         # Print the missed letters and replace blanks with guessed letters
         game.attempts_remaining = game.attempts_allowed-len(game.missedLetters)
         blanks = '*' * len(game.secretWord)
         for i in range(len(game.secretWord)):
             if game.secretWord[i] in game.correctLetters:
                 blanks = blanks[:i] + game.secretWord[i] + blanks[i+1:]
-        m1 = 'Guessed letters: ' + blanks
-        m2 = ' - Missed Letters: ' + game.missedLetters
-        m3 = ' - You have ' + str(game.attempts_remaining) + ' attempts left.'
-        msg = m1 + m2 + m3
-
+        msg = 'Guessed letters: ' + blanks + ' - Missed Letters: ' +\
+        game.missedLetters + ' - You have ' +\
+        str(game.attempts_remaining) + ' attempts left.'
         # Check if player has guessed too many times and lost
         if len(game.missedLetters) == game.attempts_allowed:
-            m1 = 'You are an Hangman! You have run out of guesses after '
-            m2 = str(len(game.missedLetters)) + ' missed guesses and '
-            m3 = str(len(game.correctLetters))
-            m4 = ' correct guesses, the secret word was: '
-            m5 = game.secretWord + '! '
-            msg = m1 + m2 + m3 + m4 + m5
+            msg = 'You are an Hangman! You have run out of guesses after ' + \
+            str(len(game.missedLetters)) + ' missed guesses and ' + \
+            str(len(game.correctLetters)) + ' correct guesses, '\
+            ' the secret word was: ' + game.secretWord + '! '
             game.end_game(False)
-            return game.to_form(msg + ' Game over!')
+            return game.to_form(msg + 'Game over!')
         else:
             game.put()
             return game.to_form(msg)
@@ -208,6 +207,20 @@ class Hangman(remote.Service):
                     'A User with that name does not exist!')
         scores = Score.query(Score.user == user.key)
         return ScoreForms(items=[score.to_form() for score in scores])
+
+    @endpoints.method(request_message=HIGH_SC_REQUEST,
+                      response_message=ScoreForms,
+                      path='high_scores',
+                      name='get_high_scores',
+                      http_method='GET')
+    def get_high_scores(self, request):
+        """Returns the players total scores ordered with the best first\
+        (the player with the lowest number of attemps to guess) """
+        if request.max_results_to_show:
+        	scores = Score.query(Score.won == True).order(Score.guesses).fetch(request.max_results_to_show)
+      	else:
+        	scores = Score.query(Score.won == True).order(Score.guesses).fetch()
+      	return ScoreForms(items=[score.to_form() for score in scores])
 
     @endpoints.method(response_message=StringMessage,
                       path='games/average_attempts',
