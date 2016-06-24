@@ -33,8 +33,9 @@ HIGH_SC_REQUEST = endpoints.ResourceContainer(
 
 MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
 
-wordList = 'ant baboon badger bat bear beaver'.split()
-
+wordList1 = 'ant baboon badger bat bear beaver'.split()
+wordList2 = 'bread spaghetti pizza pasta rice blueberry'.split()
+wordList3 = 'taylor, chemister, hairdresser'.split()
 
 @endpoints.api(name='hangman', version='v1')
 class Hangman(remote.Service):
@@ -62,19 +63,23 @@ class Hangman(remote.Service):
     def new_game(self, request):
         """Creates new game"""
         user = User.query(User.name == request.user_name).get()
+        if request.category_1_animals_2_food_3_jobs <1 or request.category_1_animals_2_food_3_jobs >3:
+            raise endpoints.NotFoundException(
+            	'You should choose a category between 1 and 3! '\
+            	'1=animals, 2=food, 3=jobs')
         if not user:
             raise endpoints.NotFoundException(
                     'A User with that name does not exist!')
         try:
-            game = Game.new_game(user.key, request.attempts)
+            game = Game.new_game(user.key, request.category_1_animals_2_food_3_jobs)
         except ValueError:
-            raise endpoints.BadRequestException('attemps must be 10 or less!')
-
+        	raise endpoints.BadRequestException('ddd')
+    
         # Use a task queue to update the average attempts remaining.
-        # This operation is not needed to complete the creation of a new game
-        # so it is performed out of sequence.
         taskqueue.add(url='/tasks/cache_average_attempts')
-        return game.to_form('Good luck playing Hangman!')
+        return game.to_form('Good luck playing Hangman! You have 10 '
+        'attempts to guess the secret word of your chosen category: '+
+        str(request.category_1_animals_2_food_3_jobs))
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,

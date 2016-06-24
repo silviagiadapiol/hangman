@@ -8,19 +8,19 @@
  
  
 ##Game Description:
-Hangman is a simple guessing game. Each game begins with a random 'secret word'
-(randomly chosen between a given list of words) and a maximum number of
-'attempts'. 'Guesses' are sent to the `make_move` endpoint which will reply
+Hangman is a simple guessing game. Each game begins with a random 'secret word',
+wich is randomly chosen between a given list of words of a category chosen by
+the player. 'Guesses' are sent to the `make_move` endpoint which will reply
 with the letters correctly guessed between some * (that indicates the hidden
 letters) and a list of the missed letters. When all the letters of the secret
 word are guessed it will reply with 'you win'; if the maximum number of attempts
-is reached before guessing the whole word it will reply 'game over'. 
+(10) is reached before guessing the whole word it will reply 'game over'. 
 For each User the Score is determined by the number of attempts (missed letters)
 made before guessing the word. So the lower is the Score, the best is the result.
 Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
 `urlsafe_game_key`. It's possible to cancel active games but not completed ones.
-It is possible t see a game history.
+It is possible to see the players ranking and a game history.
 
 ##Files Included:
  - api.py: Contains endpoints and game playing logic.
