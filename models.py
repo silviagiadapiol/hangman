@@ -10,13 +10,24 @@ from google.appengine.ext import ndb
 
 wordList1 = 'ant baboon badger bat bear beaver'.split()
 wordList2 = 'bread spaghetti pizza pasta rice blueberry'.split()
-wordList3 = 'taylor, chemister, hairdresser'.split()
+wordList3 = 'taylor chemister hairdresser doctor attorney'.split()
 
 class User(ndb.Model):
     """User profile"""
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty()
+    victories = ndb.IntegerProperty(default = 0)
+    losses = ndb.IntegerProperty(default = 0)
+    ratio = ndb.FloatProperty()
 
+    def to_form(self):
+        form = UserForm()
+        form.name = self.name
+        form.email = self.email
+        form.ratio = self.victories/(self.victories + self.losses)
+        form.victories = self.victories
+        form.losses = self.losses
+        return form
 
 class Game(ndb.Model):
     """Game object"""
@@ -29,6 +40,9 @@ class Game(ndb.Model):
     game_over = ndb.BooleanProperty(required=True, default=False)
     game_cancelled = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
+    user_name = ndb.StringProperty()
+    us_victories = ndb.IntegerProperty(default=0)
+    us_losses = ndb.IntegerProperty(default=0)
 
     @classmethod
     def new_game(cls, user, category):
@@ -41,6 +55,7 @@ class Game(ndb.Model):
             wordList = wordList3
 
         game = Game(user=user,
+                    user_name=user.get().name,
                     secretWord = wordList[random.randint(0, len(wordList)-1)],
                     missedLetters = '',
                     correctLetters = '',
@@ -48,7 +63,9 @@ class Game(ndb.Model):
                     attempts_allowed = 10,
                     attempts_remaining = 10,
                     game_cancelled = False,
-                    game_over = False)
+                    game_over = False,
+                    us_victories=0,
+                    us_losses=0,)
         game.put()
         return game
 
@@ -61,6 +78,8 @@ class Game(ndb.Model):
         form.attempts_remaining = self.attempts_remaining
         form.game_over = self.game_over
         form.game_cancelled = self.game_cancelled
+        form.us_victories = self.us_victories
+        form.us_losses = self.us_losses
         form.message = message
         return form
 
@@ -75,7 +94,6 @@ class Game(ndb.Model):
         score.put()
 
 
-
 class Score(ndb.Model):
     """Score object"""
     user = ndb.KeyProperty(required=True, kind='User')
@@ -84,8 +102,12 @@ class Score(ndb.Model):
     guesses = ndb.IntegerProperty(required=True)
 
     def to_form(self):
-        return ScoreForm(user_name=self.user.get().name, won=self.won,
-                         date=str(self.date), guesses=self.guesses)
+        form = ScoreForm()
+        form.user_name=self.user.get().name 
+        form.won=self.won
+        form.date=str(self.date)
+        form.guesses=self.guesses
+        return form
 
 
 class GameForm(messages.Message):
@@ -97,7 +119,8 @@ class GameForm(messages.Message):
     game_cancelled = messages.BooleanField(5, required=True)
     message = messages.StringField(6, required=True)
     user_name = messages.StringField(7, required=True)
-
+    us_victories = messages.IntegerField(8, required=True)
+    us_losses = messages.IntegerField(9, required=True)
 
 class GameForms(messages.Message):
     """GameForms -- multiple Game outbound form message"""
@@ -127,8 +150,20 @@ class ScoreForms(messages.Message):
     """Return multiple ScoreForms"""
     items = messages.MessageField(ScoreForm, 1, repeated=True)
 
+class RankingForm(messages.Message):
+    """RankingForm for outbound ranking"""
+    name = messages.StringField(1, required=True)
+    email = messages.StringField(2)
+    ratio = messages.FloatField(3, required=True)
+    victories = messages.IntegerField(4, required=True)
+    losses = messages.IntegerField(5, required=True)
+
+
+
+class RankingForms(messages.Message):
+    """Return multiple RankingForms"""
+    items = messages.MessageField(RankingForm, 1, repeated=True)
 
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     message = messages.StringField(1, required=True)
-

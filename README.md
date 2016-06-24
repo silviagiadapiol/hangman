@@ -43,12 +43,13 @@ It is possible to see the players ranking and a game history.
  - **new_game**
     - Path: 'game'
     - Method: POST
-    - Parameters: user_name, attempts
+    - Parameters: user_name, category_1_animals_2_food_3_jobs
     - Returns: GameForm with initial game state.
     - Description: Creates a new Game. user_name provided must correspond to an
-    existing user - will raise a NotFoundException if not. Attempts must be less
-    then 11. Also adds a task to a task queue to update the average moves 
-    remaining for active games.
+    existing user - will raise a NotFoundException if not. Category must be chosen
+    between 1(animals), 2(food) or 3(jobs) - will raise a NotFoundException if not.
+    Also adds a task to a task queue to update the average moves remaining for
+    active games.
      
  - **get_game**
     - Path: 'game/{urlsafe_game_key}'
@@ -101,23 +102,27 @@ It is possible to see the players ranking and a game history.
  - **get_high_scores**
     - Path: 'high_scores/user/{user_name}'
     - Method: GET
-    - Parameters: get_high_scores
+    - Parameters: max_results_to_show (optional)
     - Returns: ScoreForms. 
     - Description: Returns all players total Scores ordered with the best (lowest) first.
     
- - **get_user_rankings**
+
+
+
+
+- **get_user_rankings**
     - Path: 'user_ranking/user/{user_name}'
     - Method: GET
     - Parameters: get_user_rankings
-    - Returns: ScoreForms. 
-    - Description: Returns all players total Scores ordered with the best (lowest) first.
+    - Returns: RankingForms. 
+    - Description: Returns all players ordered by victories/losses ratio.
  
  - **get_game_history**
-    - Path: 'user_ranking/user/{user_name}'
+    - Path: 'game_history/{urlsafe_game_key}'
     - Method: GET
     - Parameters: get_game_history
-    - Returns: ScoreForms. 
-    - Description: Returns all players total Scores ordered with the best (lowest) first.
+    - Returns: HistoryForm. 
+    - Description: Returns a 'history' of moves for each game>.  
 
  - **get_average_attempts_remaining**
     - Path: 'games/average_attempts'
@@ -130,7 +135,7 @@ It is possible to see the players ranking and a game history.
 
 ##Models Included:
  - **User**
-    - Stores unique user_name and (optional) email address.
+    - Stores unique user_name, email address (optional) and winning ratio.
     
  - **Game**
     - Stores unique game states. Associated with User model via KeyProperty.
@@ -141,7 +146,7 @@ It is possible to see the players ranking and a game history.
 ##Forms Included:
  - **GameForm**
     - Representation of a Game's state (urlsafe_key, attempts_remaining,
-    game_over flag, message, user_name).
+    word_category, game_over flag, game_cancelled flag, message, user_name).
 
  - **GameForms**
     - Multiple GameForm container.
@@ -159,5 +164,13 @@ It is possible to see the players ranking and a game history.
  - **ScoreForms**
     - Multiple ScoreForm container.
 
+ - **RankingForm**
+    - Representation of a user's Ranking (user_name, email, ratio, victories,
+    losses).
+
+ - **RankingForms**
+    - Multiple RankingForm container.
+
+
  - **StringMessage**
-    - General purpose String container.
+    - General purpose String container. -->

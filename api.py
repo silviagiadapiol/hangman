@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-`
 """api.py - Create and configure the Game API exposing the resources.
 This can also contain game logic. For more complex games it would be wise to
 move game logic to another file. Ideally the API will be simple, concerned
@@ -14,7 +13,7 @@ from google.appengine.api import taskqueue
 
 from models import User, Game, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
-    ScoreForms, GameForms#, GameQueryForm, GameQueryForms
+    ScoreForms, GameForms, RankingForms#, GameQueryForm, GameQueryForms
 from utils import get_by_urlsafe
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
@@ -32,10 +31,6 @@ HIGH_SC_REQUEST = endpoints.ResourceContainer(
 	max_results_to_show = messages.IntegerField(1),)
 
 MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
-
-wordList1 = 'ant baboon badger bat bear beaver'.split()
-wordList2 = 'bread spaghetti pizza pasta rice blueberry'.split()
-wordList3 = 'taylor, chemister, hairdresser'.split()
 
 @endpoints.api(name='hangman', version='v1')
 class Hangman(remote.Service):
@@ -65,8 +60,8 @@ class Hangman(remote.Service):
         user = User.query(User.name == request.user_name).get()
         if request.category_1_animals_2_food_3_jobs <1 or request.category_1_animals_2_food_3_jobs >3:
             raise endpoints.NotFoundException(
-            	'You should choose a category between 1 and 3! '\
-            	'1=animals, 2=food, 3=jobs')
+            	'You should choose a category between 1 and 3! \
+            	1=animals, 2=food, 3=jobs')
         if not user:
             raise endpoints.NotFoundException(
                     'A User with that name does not exist!')
@@ -77,9 +72,8 @@ class Hangman(remote.Service):
     
         # Use a task queue to update the average attempts remaining.
         taskqueue.add(url='/tasks/cache_average_attempts')
-        return game.to_form('Good luck playing Hangman! You have 10 '
-        'attempts to guess the secret word of your chosen category: '+
-        str(request.category_1_animals_2_food_3_jobs))
+        return game.to_form('Good luck playing Hangman! You have 10 attempts'
+        'to guess the secret word of your chosen category')
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
@@ -147,6 +141,8 @@ class Hangman(remote.Service):
                     break
             if foundAllLetters:
                 game.end_game(True)
+                game.us_victories+=1
+
                 msg = 'Yes, the secret word is: '+ game.secretWord + \
                 '! You win after ' + str(len(game.missedLetters)) + \
                 ' missed guesses'
@@ -167,7 +163,8 @@ class Hangman(remote.Service):
             msg = 'You are an Hangman! You have run out of guesses after ' + \
             str(len(game.missedLetters)) + ' missed guesses and ' + \
             str(len(game.correctLetters)) + ' correct guesses, '\
-            ' the secret word was: ' + game.secretWord + '! '
+            'the secret word was: ' + game.secretWord + '! '
+            game.us_losses+=1
             game.end_game(False)
             return game.to_form(msg + 'Game over!')
         else:
@@ -200,7 +197,7 @@ class Hangman(remote.Service):
         return ScoreForms(items=[score.to_form() for score in Score.query()])
 
     @endpoints.method(request_message=USER_REQUEST,
-                      response_message=ScoreForms,
+    				  response_message=ScoreForms,
                       path='scores/user/{user_name}',
                       name='get_user_scores',
                       http_method='GET')
@@ -226,6 +223,16 @@ class Hangman(remote.Service):
       	else:
         	scores = Score.query(Score.won == True).order(Score.guesses).fetch()
       	return ScoreForms(items=[score.to_form() for score in scores])
+
+    @endpoints.method(response_message=RankingForms,
+                      path='user_ranking',
+                      name='get_user_rankings',
+                      http_method='GET')
+    def get_user_rankings(self, request):
+        """Return the players ordered by victories/losses ratio"""
+        users = User.query().order(-User.ratio, User.victories)
+      	return RankingForms(items=[user.to_form() for user in users])
+
 
     @endpoints.method(response_message=StringMessage,
                       path='games/average_attempts',
