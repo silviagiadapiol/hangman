@@ -106,17 +106,17 @@ It is possible to see the players ranking and a game history.
     - Returns: ScoreForms. 
     - Description: Returns all players total Scores ordered with the best (lowest) first.
     
-
-
-
-
 - **get_user_rankings**
-    - Path: 'user_ranking/user/{user_name}'
+    - Path: 'user_ranking'
     - Method: GET
-    - Parameters: get_user_rankings
-    - Returns: RankingForms. 
-    - Description: Returns all players ordered by victories/losses ratio.
+    - Parameters: None
+    - Returns: UserForms. 
+    - Description: Returns all players ordered by victories/losses ratio (with ties broken
+      by the number of victories).
  
+
+
+
  - **get_game_history**
     - Path: 'game_history/{urlsafe_game_key}'
     - Method: GET
@@ -164,12 +164,12 @@ It is possible to see the players ranking and a game history.
  - **ScoreForms**
     - Multiple ScoreForm container.
 
- - **RankingForm**
+ - **UserForm**
     - Representation of a user's Ranking (user_name, email, ratio, victories,
     losses).
 
- - **RankingForms**
-    - Multiple RankingForm container.
+ - **UserForms**
+    - Multiple UserForm container.
 
 
  - **StringMessage**
