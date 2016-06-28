@@ -8,19 +8,23 @@
  
  
 ##Game Description:
-Hangman is a simple guessing game. Each game begins with a random 'secret word',
-wich is randomly chosen between a given list of words of a category chosen by
-the player. 'Guesses' are sent to the `make_move` endpoint which will reply
-with the letters correctly guessed between some * (that indicates the hidden
-letters) and a list of the missed letters. When all the letters of the secret
-word are guessed it will reply with 'you win'; if the maximum number of attempts
-(10) is reached before guessing the whole word it will reply 'game over'. 
+Hangman is a simple guessing game. Each time a player creates a new game
+he has to chose a category between 1-animals, 2-fodd and 3-jobs. The 'secret
+word' to guess is randomly chosen from a given list of words of that category. 
+The player 'Guesses' are sent to the `make_move` endpoint which will reply with 
+a list of the missed letters and one of the letters correctly guessed, placed
+between some * (that indicates the hidden letters still to guess).
+When all the letters of the secret word have been guessed, it will reply with
+'you win'; if the maximum number of attempts (10) is reached before the whole
+word is guessed, it will reply 'game over'. 
 For each User the Score is determined by the number of attempts (missed letters)
 made before guessing the word. So the lower is the Score, the best is the result.
 Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
-`urlsafe_game_key`. It's possible to cancel active games but not completed ones.
-It is possible to see the players ranking and a game history.
+`urlsafe_game_key`.
+It's possible to cancel active games but not completed ones.
+It is possible to see also the players ranking, a game history and the average
+number of attemps remaining.
 
 ##Files Included:
  - api.py: Contains endpoints and game playing logic.
@@ -114,15 +118,12 @@ It is possible to see the players ranking and a game history.
     - Description: Returns all players ordered by victories/losses ratio (with ties broken
       by the number of victories).
  
-
-
-
  - **get_game_history**
     - Path: 'game_history/{urlsafe_game_key}'
     - Method: GET
-    - Parameters: get_game_history
-    - Returns: HistoryForm. 
-    - Description: Returns a 'history' of moves for each game>.  
+    - Parameters: urlsafe_game_key
+    - Returns: StringMessage with the sequene of guesses and answers of a game
+    - Description: Returns a 'history' of moves for each game.  
 
  - **get_average_attempts_remaining**
     - Path: 'games/average_attempts'
@@ -170,7 +171,6 @@ It is possible to see the players ranking and a game history.
 
  - **UserForms**
     - Multiple UserForm container.
-
 
  - **StringMessage**
     - General purpose String container. -->

@@ -1,7 +1,4 @@
-"""api.py - Create and configure the Game API exposing the resources.
-This can also contain game logic. For more complex games it would be wise to
-move game logic to another file. Ideally the API will be simple, concerned
-primarily with communication to/from the API's users."""
+"""api.py - Create and configure the Game API exposing the resources."""
 
 from __future__ import print_function
 import random
@@ -78,7 +75,9 @@ class Hangman(remote.Service):
         # Use a task queue to update the average attempts remaining.
         taskqueue.add(url='/tasks/cache_average_attempts')
         return game.to_form('Good luck playing Hangman! You have 10 attempts '
-                            'to guess the secret word of your chosen category')
+                            'to guess the secret word of your chosen '
+                            'category; it has ' +
+                            str(len(game.secretWord)) + ' letters')
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
@@ -89,10 +88,13 @@ class Hangman(remote.Service):
         """Return the current game state."""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game:
-            if game.game_over==True:
-                return game.to_form('Game already completed!')	
+            if game.game_over == True:
+                return game.to_form('Game already completed!')
             else:
-                return game.to_form('Time to make a move!')
+                if game.game_cancelled == False:
+                    return game.to_form('Time to make a move!')
+                else:
+                    return game.to_form('Game cancelled!')
         else:
             raise endpoints.NotFoundException('Game not found!')
 
@@ -159,17 +161,21 @@ class Hangman(remote.Service):
                 msg = 'Yes, the secret word is: ' + game.secretWord + \
                       '! You win after ' + str(len(game.missedLetters)) + \
                       ' missed guesses'
+                game.add_history(letter, msg)
                 return game.to_form(msg)
+            else:
+                mess = 'Yes, the letter ' + letter.upper() + ' is correct! -- '
         else:
             game.missedLetters = game.missedLetters + request.guess
+            mess = 'No, the letter ' + letter.upper() + ' is not correct! -- '
         # Print the missed letters and replace blanks with guessed letters
         game.attempts_remaining = game.attempts_allowed-len(game.missedLetters)
         blanks = '*' * len(game.secretWord)
         for i in range(len(game.secretWord)):
             if game.secretWord[i] in game.correctLetters:
                 blanks = blanks[:i] + game.secretWord[i] + blanks[i+1:]
-        msg = 'Guessed letters: ' + blanks + ' - Missed Letters: ' +\
-            game.missedLetters + ' - You have ' +\
+        msg = mess + 'Missed Letters: ' + game.missedLetters +\
+            ' -- Guessed letters: ' + blanks + ' -- You have ' +\
             str(game.attempts_remaining) + ' attempts left.'
         # Check if player has guessed too many times and lost
         if len(game.missedLetters) == game.attempts_allowed:
@@ -182,10 +188,12 @@ class Hangman(remote.Service):
             user.ratio = float(user.victories) / float(
                          user.victories + user.losses)
             user.put()
+            game.add_history(letter, msg)
             game.end_game(False)
             return game.to_form(msg + 'Game over!')
         else:
             game.put()
+            game.add_history(letter, msg)
             return game.to_form(msg)
 
     @endpoints.method(request_message=CANCEL_REQUEST,
@@ -251,6 +259,19 @@ class Hangman(remote.Service):
         """Return the players ordered by victories/losses ratio"""
         users = User.query().order(-User.ratio, User.victories)
         return UserForms(items=[user.to_form() for user in users])
+
+    @endpoints.method(request_message=GET_GAME_REQUEST,
+                      response_message=StringMessage,
+                      path='game/{urlsafe_game_key}/history',
+                      name='get_game_history',
+                      http_method='GET')
+    def get_game_history(self, request):
+        """Return the chosen game guesses and answers history"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game:
+            return StringMessage(message=str(game.game_history))
+        else:
+            raise endpoints.NotFoundException('Game not found!')
 
     @endpoints.method(response_message=StringMessage,
                       path='games/average_attempts',

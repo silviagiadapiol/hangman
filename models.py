@@ -8,9 +8,17 @@ from datetime import date
 from protorpc import messages
 from google.appengine.ext import ndb
 
-wordList1 = 'ant baboon badger bat bear beaver'.split()
-wordList2 = 'bread spaghetti pizza pasta rice blueberry'.split()
-wordList3 = 'taylor chemister hairdresser doctor attorney'.split()
+wordList1 = 'antelope badger bear beaver cat cow dog donkey elephant fish\
+            fox giraffe goat hippopotamus horse kangaroo lion monkey parrot\
+            penguin pig pony rhinoceros sheep snake tiger varan wale wolf\
+            zebra'.split()
+wordList2 = 'apple artichoke banana baens bread carrot cheese courgette date\
+             egg eggplant garlic grapefruit ham lemon lettuce mango nut onion\
+             orange pasta pizza pepper potato rice salad salmon strawberry\
+             tomato tuna waffle'.split()
+wordList3 = 'actor attorney carpenter dentist doctor electrician engineer\
+             farmer hairdresser nurse painter pharmacist plumber surgeon\
+             veterinary'.split()
 
 
 class User(ndb.Model):
@@ -25,8 +33,7 @@ class User(ndb.Model):
         form = UserForm()
         form.name = self.name
         form.email = self.email
-        form.ratio = float(self.victories)/(
-                     float(self.victories)+float(self.losses))
+        form.ratio = self.ratio
         form.victories = self.victories
         form.losses = self.losses
         return form
@@ -44,6 +51,7 @@ class Game(ndb.Model):
     game_cancelled = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
     user_name = ndb.StringProperty()
+    game_history = ndb.PickleProperty(required=True, default=[])
 
     @classmethod
     def new_game(cls, user, category):
@@ -61,10 +69,11 @@ class Game(ndb.Model):
                     missedLetters='',
                     correctLetters='',
                     word_category=category,
-                    attempts_allowed=3,
-                    attempts_remaining=3,
+                    attempts_allowed=10,
+                    attempts_remaining=10,
                     game_cancelled=False,
                     game_over=False)
+        game.game_history = []
         game.put()
         return game
 
@@ -91,6 +100,10 @@ class Game(ndb.Model):
                       won=won,
                       guesses=self.attempts_allowed - self.attempts_remaining)
         score.put()
+
+    def add_history(self, letter, msg):
+        self.game_history.append({'guess': letter, 'answer': msg})
+        self.put()
 
 
 class Score(ndb.Model):
