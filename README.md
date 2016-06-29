@@ -16,15 +16,16 @@ a list of the missed letters and one of the letters correctly guessed, placed
 between some * (that indicates the hidden letters still to guess).
 When all the letters of the secret word have been guessed, it will reply with
 'you win'; if the maximum number of attempts (10) is reached before the whole
-word is guessed, it will reply 'game over'. 
+word is guessed, it will reply 'game over'. It's possible to see the average
+number of attemps remaining.
 For each User the Score is determined by the number of attempts (missed letters)
 made before guessing the word. So the lower is the Score, the best is the result.
 Many different Hangman games can be played by many different Users at any
 given time. Each game can be retrieved or played by using the path parameter
 `urlsafe_game_key`.
 It's possible to cancel active games but not completed ones.
-It is possible to see also the players ranking, a game history and the average
-number of attemps remaining.
+It is possible to see also the players ranking and a game history (a sequence of 
+the attemped guesses and the answer messagges of a chosen completed or active game).
 
 ##Files Included:
  - api.py: Contains endpoints and game playing logic.
@@ -87,6 +88,14 @@ number of attemps remaining.
     - Returns: Message confirming game deletion
     - Description: Allows users to cancel a game in progress but not 
       a completed game (a Boolean field identify cancelled games).
+
+ - **get_average_attempts_remaining**
+    - Path: 'games/average_attempts'
+    - Method: GET
+    - Parameters: None
+    - Returns: StringMessage
+    - Description: Gets the average number of attempts remaining for all games
+    from a previously cached memcache key.
     
  - **get_scores**
     - Path: 'scores'
@@ -124,15 +133,6 @@ number of attemps remaining.
     - Parameters: urlsafe_game_key
     - Returns: StringMessage with the sequene of guesses and answers of a game
     - Description: Returns a 'history' of moves for each game.  
-
- - **get_average_attempts_remaining**
-    - Path: 'games/average_attempts'
-    - Method: GET
-    - Parameters: None
-    - Returns: StringMessage
-    - Description: Gets the average number of attempts remaining for all games
-    from a previously cached memcache key.
-
 
 ##Models Included:
  - **User**

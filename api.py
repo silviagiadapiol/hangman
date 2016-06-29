@@ -1,6 +1,5 @@
 """api.py - Create and configure the Game API exposing the resources."""
 
-from __future__ import print_function
 import random
 import logging
 import endpoints
@@ -74,6 +73,7 @@ class Hangman(remote.Service):
 
         # Use a task queue to update the average attempts remaining.
         taskqueue.add(url='/tasks/cache_average_attempts')
+
         return game.to_form('Good luck playing Hangman! You have 10 attempts '
                             'to guess the secret word of your chosen '
                             'category; it has ' +
@@ -213,6 +213,28 @@ class Hangman(remote.Service):
             return StringMessage(message='Game {} canceled!'.format(
                 request.urlsafe_game_key))
 
+    @endpoints.method(response_message=StringMessage,
+                      path='games/average_attempts',
+                      name='get_average_attempts_remaining',
+                      http_method='GET')
+    def get_average_attempts(self, request):
+        """Get the cached average moves remaining"""
+        return StringMessage(message=memcache.get(
+               MEMCACHE_MOVES_REMAINING) or '')
+
+    @staticmethod
+    def _cache_average_attempts():
+        """Populates memcache with the average moves remaining of Games"""
+        games = Game.query(Game.game_over == False).fetch()
+        if games:
+            count = len(games)
+            total_attempts_remaining = sum([game.attempts_remaining
+                                            for game in games])
+            average = float(total_attempts_remaining)/count
+            memcache.set(MEMCACHE_MOVES_REMAINING,
+                         'The average moves remaining is {:.2f}'.format(
+                          average))
+
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
                       name='get_scores',
@@ -272,28 +294,6 @@ class Hangman(remote.Service):
             return StringMessage(message=str(game.game_history))
         else:
             raise endpoints.NotFoundException('Game not found!')
-
-    @endpoints.method(response_message=StringMessage,
-                      path='games/average_attempts',
-                      name='get_average_attempts_remaining',
-                      http_method='GET')
-    def get_average_attempts(self, request):
-        """Get the cached average moves remaining"""
-        return StringMessage(message=memcache.get(
-               MEMCACHE_MOVES_REMAINING) or '')
-
-    @staticmethod
-    def _cache_average_attempts():
-        """Populates memcache with the average moves remaining of Games"""
-        games = Game.query(Game.game_over == False).fetch()
-        if games:
-            count = len(games)
-            total_attempts_remaining = sum([game.attempts_remaining
-                                            for game in games])
-            average = float(total_attempts_remaining)/count
-            memcache.set(MEMCACHE_MOVES_REMAINING,
-                         'The average moves remaining is {:.2f}'.format(
-                          average))
 
 
 api = endpoints.api_server([Hangman])

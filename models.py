@@ -2,7 +2,6 @@
 entities used by the Game. Because these classes are also regular Python
 classes they can include methods (such as 'to_form' and 'new_game')."""
 
-from __future__ import print_function
 import random
 from datetime import date
 from protorpc import messages
@@ -46,7 +45,7 @@ class Game(ndb.Model):
     correctLetters = ndb.StringProperty()
     word_category = ndb.IntegerProperty()
     attempts_allowed = ndb.IntegerProperty(default=10)
-    attempts_remaining = ndb.IntegerProperty(required=True, default=5)
+    attempts_remaining = ndb.IntegerProperty(required=True)
     game_over = ndb.BooleanProperty(required=True, default=False)
     game_cancelled = ndb.BooleanProperty(required=True, default=False)
     user = ndb.KeyProperty(required=True, kind='User')
