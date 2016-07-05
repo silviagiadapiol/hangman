@@ -18,6 +18,11 @@ indexes:
 - kind: Game
   properties:
   - name: user
+  - name: attempts_remaining
+
+- kind: Game
+  properties:
+  - name: user
   - name: game_over
 
 - kind: Score

@@ -13,19 +13,42 @@ he has to chose a category between 1-animals, 2-fodd and 3-jobs. The 'secret
 word' to guess is randomly chosen from a given list of words of that category. 
 The player 'Guesses' are sent to the `make_move` endpoint which will reply with 
 a list of the missed letters and one of the letters correctly guessed, placed
-between some * (that indicates the hidden letters still to guess).
-When all the letters of the secret word have been guessed, it will reply with
-'you win'; if the maximum number of attempts (10) is reached before the whole
-word is guessed, it will reply 'game over'. It's possible to see the average
-number of attemps remaining.
-For each User the Score is determined by the number of attempts (missed letters)
-made before guessing the word. So the lower is the Score, the best is the result.
+between some - (that indicates the hidden letters still to guess).
+When all the letters of the secret word have been guessed (or the whole word),
+it will reply with 'you win'; if the maximum number of attempts (10) is 
+reached before the whole word is guessed, it will reply 'game over'.
 Many different Hangman games can be played by many different Users at any
-given time. Each game can be retrieved or played by using the path parameter
-`urlsafe_game_key`.
+given time. Each game can be retrieved by using the path parameter `urlsafe_game_key`. 
 It's possible to cancel active games but not completed ones.
-It is possible to see also the players ranking and a game history (a sequence of 
+It is also possible to see the players ranking and a game history (a sequence of 
 the attemped guesses and the answer messagges of a chosen completed or active game).
+It's also possible to see the average number of attemps remaining.
+For each User the Score is determined by the number of attempts (missed letters)
+made before guessing the word. So the lower is the Score, the better is the result.
+It's possible to see all the scores of all users, all the scores of a user or the 
+players total scores ordered with the best first, as well as the player ranking 
+(win/loss ratio).
+
+ - Use the new_game endpoint to create a new user. Remember to copy the 
+  urlsafe_key property for later use.
+ - Use the new_game endpoint to create a new game for a user and a category.
+ - Use the make_move endpoint to retrieve a game you want to play (through 
+  its urlsafe_key) and to insert a letter or a word to make your guess.
+ - Use the cancel_game endpoint to cancel a game through its urlsafe_key.
+ - Use the get_game endpoint to retrieve a single game through its urlsafe_key.
+ - Use the get_user_active_games endpoint to retrieve all the active games of a user.
+ - Use the get_user_cancelled_games endpoint to retrieve all the cancelled games of a user.
+ - Use the get_user_completed_games endpoint to retrieve all the completed games of a user.
+ - Use the get_game_history endpoint to retrieve a 'history' of moves and answer messages
+  for each game.
+ - Use the get_average_attempts_remaining to retrieve the average number of attempts
+  remaining.
+ - Use the get_scores endpoint to retrieve all the scores of all the users unordered.
+ - Use the get_user_scores endpoint to retrieve all the scores of a user.
+ - Use the get_high_scores endpoint to retrieve the players total scores ordered
+  with the best first (the player with the lowest number of attemps to guess).
+ - Use the get_user_ranking endpoint to retrieve all players ordered by victories/losses
+  ratio (with ties broken by the number of victories) .
 
 ##Files Included:
  - api.py: Contains endpoints and game playing logic.
@@ -56,30 +79,14 @@ the attemped guesses and the answer messagges of a chosen completed or active ga
     Also adds a task to a task queue to update the average moves remaining for
     active games.
      
- - **get_game**
-    - Path: 'game/{urlsafe_game_key}'
-    - Method: GET
-    - Parameters: urlsafe_game_key
-    - Returns: GameForm with current game state.
-    - Description: Returns the current state of a game.
-
- - **get_user_games**
-    - Path: 'games/user/{user_name}'
-    - Method: GET
-    - Parameters: user_name
-    - Returns: GameForms
-    - Description: Returns all Games played by the selected player, listing
-    all the active games first (game_over=false) and then the completed ones 
-    (game_over=true) .
-    Will raise a NotFoundException if the User does not exist.
-
  - **make_move**
     - Path: 'game/{urlsafe_game_key}'
     - Method: PUT
     - Parameters: urlsafe_game_key, guess
     - Returns: GameForm with new game state.
-    - Description: Accepts a 'guess' and returns the updated state of the game.
-    If this causes a game to end, a corresponding Score entity will be created.
+    - Description: Accepts a 'guess' (a single letter or a whole word) and returns
+     the updated state of the game. If this causes a game to end, a corresponding
+     Score entity will be created.
     
  - **cancel_game**
     - Path: ''game_canc/{urlsafe_game_key}''
@@ -88,6 +95,44 @@ the attemped guesses and the answer messagges of a chosen completed or active ga
     - Returns: Message confirming game deletion
     - Description: Allows users to cancel a game in progress but not 
       a completed game (a Boolean field identify cancelled games).
+
+ - **get_game**
+    - Path: 'game/{urlsafe_game_key}'
+    - Method: GET
+    - Parameters: urlsafe_game_key
+    - Returns: GameForm with current game state.
+    - Description: Returns the current state of a game.
+
+ - **get_user_active_games**
+    - Path: 'active_games/user/{user_name}'
+    - Method: GET
+    - Parameters: user_name
+    - Returns: GameForms
+    - Description: Returns all active Games played by the selected player.
+    Will raise a NotFoundException if the User does not exist.
+
+ - **get_user_cancelled_games**
+    - Path: 'cancelled_games/user/{user_name}'
+    - Method: GET
+    - Parameters: user_name
+    - Returns: GameForms
+    - Description: Returns all cancelled Games played by the selected player.
+    Will raise a NotFoundException if the User does not exist.
+
+ - **get_user_completed_games**
+    - Path: 'cancelled_games/user/{user_name}'
+    - Method: GET
+    - Parameters: user_name
+    - Returns: GameForms
+    - Description: Returns all completed Games played by the selected player.
+    Will raise a NotFoundException if the User does not exist.
+ 
+ - **get_game_history**
+    - Path: 'game_history/{urlsafe_game_key}'
+    - Method: GET
+    - Parameters: urlsafe_game_key
+    - Returns: StringMessage with the sequene of guesses and answers of a game
+    - Description: Returns a 'history' of moves and answer messages for each game.  
 
  - **get_average_attempts_remaining**
     - Path: 'games/average_attempts'
@@ -126,13 +171,6 @@ the attemped guesses and the answer messagges of a chosen completed or active ga
     - Returns: UserForms. 
     - Description: Returns all players ordered by victories/losses ratio (with ties broken
       by the number of victories).
- 
- - **get_game_history**
-    - Path: 'game_history/{urlsafe_game_key}'
-    - Method: GET
-    - Parameters: urlsafe_game_key
-    - Returns: StringMessage with the sequene of guesses and answers of a game
-    - Description: Returns a 'history' of moves for each game.  
 
 ##Models Included:
  - **User**
@@ -145,6 +183,13 @@ the attemped guesses and the answer messagges of a chosen completed or active ga
     - Records completed games. Associated with Users model via KeyProperty.
     
 ##Forms Included:
+ - **UserForm**
+    - Representation of a user's Ranking (user_name, email, ratio, victories,
+    losses).
+
+ - **UserForms**
+    - Multiple UserForm container.
+
  - **GameForm**
     - Representation of a Game's state (urlsafe_key, attempts_remaining,
     word_category, game_over flag, game_cancelled flag, message, user_name).
@@ -164,13 +209,6 @@ the attemped guesses and the answer messagges of a chosen completed or active ga
 
  - **ScoreForms**
     - Multiple ScoreForm container.
-
- - **UserForm**
-    - Representation of a user's Ranking (user_name, email, ratio, victories,
-    losses).
-
- - **UserForms**
-    - Multiple UserForm container.
 
  - **StringMessage**
     - General purpose String container. -->

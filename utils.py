@@ -1,5 +1,4 @@
 """utils.py - File for collecting general utility functions."""
-import logging
 from google.appengine.ext import ndb
 import endpoints
 

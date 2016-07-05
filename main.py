@@ -1,10 +1,10 @@
 """main.py - This file contains handlers that are called by taskqueue and/or
 cronjobs."""
-import logging
 import webapp2
 from google.appengine.api import mail, app_identity
 from api import Hangman
-from models import User, Game
+from models.user_class import User
+from models.game_class import Game
 
 
 class SendReminderEmail(webapp2.RequestHandler):
@@ -13,10 +13,10 @@ class SendReminderEmail(webapp2.RequestHandler):
         who has incompleted games. Called every 6 hours
         using a cron job"""
         app_id = app_identity.get_application_id()
-        users = User.query(User.email != None)
+        users = User.query(User.email is not None)
         for user in users:
             games = Game.query().filter(
-                    Game.user == user.key and Game.game_over == false)
+                Game.user == user.key and Game.game_over is False)
             if games:
                 subject = 'This is a reminder for Hangman game!'
                 body = 'Hi {}, complete your Hangman game!'.format(user.name)

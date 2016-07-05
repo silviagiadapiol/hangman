@@ -1,8 +1,8 @@
-"""models.py - This file contains the class definitions for the Datastore
-entities used by the Game. Because these classes are also regular Python
-classes they can include methods (such as 'to_form' and 'new_game')."""
+"""game_class.py - This file contains the Game class and its forms
+   definitions"""
 
 import random
+from score_class import Score
 from datetime import date
 from protorpc import messages
 from google.appengine.ext import ndb
@@ -18,24 +18,6 @@ wordList2 = 'apple artichoke banana baens bread carrot cheese courgette date\
 wordList3 = 'actor attorney carpenter dentist doctor electrician engineer\
              farmer hairdresser nurse painter pharmacist plumber surgeon\
              veterinary'.split()
-
-
-class User(ndb.Model):
-    """User profile"""
-    name = ndb.StringProperty(required=True)
-    email = ndb.StringProperty()
-    victories = ndb.IntegerProperty(default=0)
-    losses = ndb.IntegerProperty(default=0)
-    ratio = ndb.FloatProperty(default=0.0)
-
-    def to_form(self):
-        form = UserForm()
-        form.name = self.name
-        form.email = self.email
-        form.ratio = self.ratio
-        form.victories = self.victories
-        form.losses = self.losses
-        return form
 
 
 class Game(ndb.Model):
@@ -64,7 +46,7 @@ class Game(ndb.Model):
 
         game = Game(user=user,
                     user_name=user.get().name,
-                    secretWord=wordList[random.randint(0, len(wordList)-1)],
+                    secretWord=wordList[random.randint(0, len(wordList) - 1)],
                     missedLetters='',
                     correctLetters='',
                     word_category=category,
@@ -105,22 +87,6 @@ class Game(ndb.Model):
         self.put()
 
 
-class Score(ndb.Model):
-    """Score object"""
-    user = ndb.KeyProperty(required=True, kind='User')
-    date = ndb.DateProperty(required=True)
-    won = ndb.BooleanProperty(required=True)
-    guesses = ndb.IntegerProperty(required=True)
-
-    def to_form(self):
-        form = ScoreForm()
-        form.user_name = self.user.get().name
-        form.won = self.won
-        form.date = str(self.date)
-        form.guesses = self.guesses
-        return form
-
-
 class GameForm(messages.Message):
     """GameForm for outbound game state information"""
     urlsafe_key = messages.StringField(1, required=True)
@@ -140,41 +106,9 @@ class GameForms(messages.Message):
 class NewGameForm(messages.Message):
     """Used to create a new game"""
     user_name = messages.StringField(1, required=True)
-    category_1_animals_2_food_3_jobs = messages.IntegerField(2)
+    cat_1_animals_2_food_3_jobs = messages.IntegerField(2)
 
 
 class MakeMoveForm(messages.Message):
     """Used to make a move in an existing game"""
     guess = messages.StringField(1, required=True)
-
-
-class ScoreForm(messages.Message):
-    """ScoreForm for outbound Score information"""
-    user_name = messages.StringField(1, required=True)
-    date = messages.StringField(2, required=True)
-    won = messages.BooleanField(3, required=True)
-    guesses = messages.IntegerField(4, required=True)
-
-
-class ScoreForms(messages.Message):
-    """Return multiple ScoreForms"""
-    items = messages.MessageField(ScoreForm, 1, repeated=True)
-
-
-class UserForm(messages.Message):
-    """UserForm for outbound ranking"""
-    name = messages.StringField(1, required=True)
-    email = messages.StringField(2)
-    ratio = messages.FloatField(3)
-    victories = messages.IntegerField(4)
-    losses = messages.IntegerField(5)
-
-
-class UserForms(messages.Message):
-    """Return multiple UserForms"""
-    items = messages.MessageField(UserForm, 1, repeated=True)
-
-
-class StringMessage(messages.Message):
-    """StringMessage-- outbound (single) string message"""
-    message = messages.StringField(1, required=True)
