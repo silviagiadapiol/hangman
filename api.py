@@ -105,7 +105,6 @@ class Hangman(remote.Service):
                             'category; it has ' +
                             str(len(game.secretWord)) + ' letters')
 
-
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
                       response_message=GameForm,
                       path='game/{urlsafe_game_key}',
@@ -122,13 +121,15 @@ class Hangman(remote.Service):
             or telling if the user won guessing the word or lost by making
             too much wrong attepts.
         Raises:
-            endpoints.ForbiddenException: If that game is already over."""
+            endpoints.ForbiddenException: If that game is already over 
+            or it has been cancelled."""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game.game_over:
             raise endpoints.ForbiddenException(
                 'Illegal action: Game is already over.')
         if game.game_cancelled:
-            return game.to_form('Game cancelled! You cannot play it!')
+            raise endpoints.ForbiddenException(
+                'Illegal action: Game has been cancelled.')
         # Check if the player enters a single letter not already guessed
         game.alreadyGuessed = game.missedLetters + game.correctLetters
         letter = request.guess
@@ -148,7 +149,7 @@ class Hangman(remote.Service):
                 return game.to_form(msg)
             else:
                 if len(letter) != 1:
-                    msg = 'Enter a single letter!'
+                    msg = 'Enter a single letter or try to guess the whole word'
                     return game.to_form(msg)
                 else:
                     if letter in game.alreadyGuessed:
@@ -319,6 +320,26 @@ class Hangman(remote.Service):
         return GameForms(
             items=[game.to_form('game completed!') for game in games])
 
+    @endpoints.method(request_message=GET_GAME_REQUESTS,
+                      response_message=StringMessage,
+                      path='game/{urlsafe_game_key}/history',
+                      name='get_game_history',
+                      http_method='GET')
+    def get_game_history(self, request):
+        """Return the chosen game guesses and answers history
+        Args:
+            request: The GET_GAME_REQUESTS object, which require the
+            urlsafe_game_key
+        Returns:
+            StringMessage: telling with the game guesses and answers history
+        Raises:
+            endpoints.NotFoundException: If that game doesn't exist."""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game:
+            return StringMessage(message=str(game.game_history))
+        else:
+            raise endpoints.NotFoundException('Game not found!')
+
     @endpoints.method(response_message=StringMessage,
                       path='games/average_attempts',
                       name='get_average_attempts_remaining',
@@ -416,26 +437,6 @@ class Hangman(remote.Service):
             and losses."""
         users = User.query().order(-User.ratio, User.victories)
         return UserForms(items=[user.to_form() for user in users])
-
-    @endpoints.method(request_message=GET_GAME_REQUESTS,
-                      response_message=StringMessage,
-                      path='game/{urlsafe_game_key}/history',
-                      name='get_game_history',
-                      http_method='GET')
-    def get_game_history(self, request):
-        """Return the chosen game guesses and answers history
-        Args:
-            request: The GET_GAME_REQUESTS object, which require the
-            urlsafe_game_key
-        Returns:
-            StringMessage: telling with the game guesses and answers history
-        Raises:
-            endpoints.NotFoundException: If that game doesn't exist."""
-        game = get_by_urlsafe(request.urlsafe_game_key, Game)
-        if game:
-            return StringMessage(message=str(game.game_history))
-        else:
-            raise endpoints.NotFoundException('Game not found!')
 
 
 api = endpoints.api_server([Hangman])

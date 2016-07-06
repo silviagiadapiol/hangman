@@ -13,10 +13,10 @@ class SendReminderEmail(webapp2.RequestHandler):
         who has incompleted games. Called every 6 hours
         using a cron job"""
         app_id = app_identity.get_application_id()
-        users = User.query(User.email is not None)
+        users = User.query(User.email != None)
         for user in users:
             games = Game.query().filter(
-                Game.user == user.key and Game.game_over is False)
+                Game.user == user.key and Game.game_over == False)
             if games:
                 subject = 'This is a reminder for Hangman game!'
                 body = 'Hi {}, complete your Hangman game!'.format(user.name)
